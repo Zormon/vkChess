@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "godot-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@coding-solo/godot-mcp"],
+      "env": {
+        "GODOT_PATH": "C:\\Users\\osuillen\\apps\\Godot_v4.7-stable_win64.exe\\Godot_v4.7-stable_win64.exe"
+      }
+    }
+  }
+}

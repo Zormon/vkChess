@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://buk6hhcwvuhvr"]
+
+[ext_resource type="Script" uid="uid://d2v5i4ivvvuyv" path="res://scripts/Kastpinne.gd" id="1_kastpinne"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 0.02
+bottom_radius = 0.02
+height = 0.3
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood_dark"]
+albedo_color = Color(0.4, 0.25, 0.1, 1)
+roughness = 0.85
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_cb3go"]
+radius = 0.03
+height = 0.34
+
+[node name="Kastpinne" type="RigidBody3D" unique_id=955760798]
+collision_layer = 2
+collision_mask = 13
+mass = 0.3
+continuous_cd = true
+contact_monitor = true
+max_contacts_reported = 4
+linear_damp = 0.1
+angular_damp = 0.1
+script = ExtResource("1_kastpinne")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1379248292]
+mesh = SubResource("CylinderMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_wood_dark")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=369621231]
+shape = SubResource("CapsuleShape3D_cb3go")
