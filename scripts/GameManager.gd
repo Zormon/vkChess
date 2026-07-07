@@ -7,7 +7,7 @@ extends Node
 const KubbScript = preload("res://scripts/Kubb.gd")
 
 @export_group("Setup")
-@export var kubb_scene: PackedScene
+@export var kubb_object: PackedScene
 @export var kubb_root: Node3D = null
 
 @export_group("Field Layout")
@@ -20,25 +20,15 @@ var _kubb_start_transforms: Array[Transform3D] = []
 
 
 func _ready() -> void:
-	# Default kubb_root to a sibling named "Kubbs" if not set in the scene.
-	if kubb_root == null:
-		var parent: Node = get_parent()
-		if parent != null:
-			var n: Node = parent.get_node_or_null("Field/Kubbs")
-			if n != null:
-				kubb_root = n
 	_spawn_kubbs()
-
 
 func _spawn_kubbs() -> void:
 	_clear_kubbs()
-	if kubb_scene == null or kubb_root == null:
-		push_warning("GameManager: missing kubb_scene or kubb_root")
-		return
+
 	# Kubbs line up on the baseline at the far end of the field (negative Z).
 	var baseline_z: float = -field_length * 0.5
 	for i in kubb_count:
-		var kubb = kubb_scene.instantiate()
+		var kubb = kubb_object.instantiate()
 		kubb_root.add_child(kubb)
 		# Center the line around X=0. With 5 kubbs and spacing 0.8 the row is 3.2m wide.
 		var x: float = (float(i) - float(kubb_count - 1) * 0.5) * kubb_spacing
@@ -57,7 +47,11 @@ func _clear_kubbs() -> void:
 
 
 ## Reset every kubb back to its starting position.
+## Safe to call even if the array is empty (e.g. before _ready spawned them).
 func reset_kubbs() -> void:
+	if _kubbs.is_empty():
+		return
 	for i in _kubbs.size():
-		if is_instance_valid(_kubbs[i]):
-			_kubbs[i].reset_to(_kubb_start_transforms[i])
+		var k: Node = _kubbs[i]
+		if is_instance_valid(k) and k is KubbScript:
+			k.reset_to(_kubb_start_transforms[i])

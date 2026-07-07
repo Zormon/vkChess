@@ -62,14 +62,29 @@ func throw(force: Vector3, spin: Vector3) -> void:
 
 
 ## Reset to a given transform and freeze (kinematic, still collidable).
+## Strategy:
+## 1. Freeze the body first (so the physics server is OK with us writing transform).
+## 2. Set global_transform directly — when freeze=true, the physics server
+##    treats this as authoritative and the next physics step uses our value
+##    (instead of writing over it as happens with live bodies).
+## 3. Clear velocities and sleep.
+## This works for both the first-spawn case (RID may not be valid yet) and
+## subsequent resets, because it does not rely on the physics server's RID.
 func reset_to(transform_xform: Transform3D) -> void:
 	_is_in_flight = false
 	_stopped_timer = 0.0
-	linear_velocity = Vector3.ZERO
-	angular_velocity = Vector3.ZERO
-	global_transform = transform_xform
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	# Direct transform write — safe because the body is frozen.
+	global_transform = transform_xform
+	# Also push to the physics server if the RID is already valid, so the
+	# frozen body's colliders move with it.
+	if get_rid().is_valid():
+		PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, transform_xform)
+	sleeping = true
+	# Stay frozen — the LaunchController will call throw() to release us.
 
 
 func _physics_process(delta: float) -> void:

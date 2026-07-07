@@ -39,9 +39,28 @@ func _physics_process(_delta: float) -> void:
 
 
 ## Reset to the given transform and put the body to sleep.
+## IMPORTANT: in Godot 4, setting global_transform directly on a live RigidBody3D
+## from a non-physics callback (like an Input handler) can be silently
+## overwritten by the next physics step, leaving the kubb in its old position.
+## The robust pattern is: freeze, teleport via PhysicsServer3D, sleep, and defer
+## the unfreeze so the physics server has time to commit the new transform.
 func reset_to(transform_xform: Transform3D) -> void:
+	var was_frozen: bool = freeze
+	freeze = true
+	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
-	global_transform = transform_xform
+	# Use PhysicsServer3D to atomically push the new transform to the physics
+	# engine. This bypasses the regular transform setter path that gets
+	# overridden by queued physics steps.
+	PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, transform_xform)
 	sleeping = true
 	_was_upright = true
+	# If the body wasn't frozen before, defer the unfreeze so the physics
+	# server commits the teleport before the body is simulated again.
+	if not was_frozen:
+		call_deferred("_unfreeze_after_reset")
+
+
+func _unfreeze_after_reset() -> void:
+	freeze = false

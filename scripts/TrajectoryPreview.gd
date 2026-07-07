@@ -1,54 +1,75 @@
-# TrajectoryPreview.gd — Renders a predicted parabolic arc using ImmediateMesh.
-# Uses simple kinematic integration: p = p0 + v*t + 0.5*g*t^2.
-# Optionally raycasts between sample points to stop the arc at the first impact.
+# TrajectoryPreview.gd - Renders a predicted parabolic arc using a MultiMesh of small spheres.
+# Spheres are much more visible than 1-pixel PRIMITIVE_LINE_STRIP lines and
+# also make the arc feel like a "dotted line" that's easy to read at a glance.
 class_name TrajectoryPreview
 extends Node3D
 
 @export_group("Sampling")
-@export var sample_count: int = 36
+@export var sample_count: int = 30
 @export_range(0.005, 0.2, 0.005) var time_step: float = 0.04
 
 @export_group("Style")
-@export var color_aiming: Color = Color(1.0, 0.9, 0.2, 1.0)   # yellow while aiming
-@export var color_frozen: Color = Color(0.25, 1.0, 0.45, 1.0) # green when frozen
-@export var ground_offset: float = 0.02  # lift arc slightly to avoid z-fighting
+@export var color_aiming: Color = Color(1.0, 0.85, 0.15, 1.0)
+@export var color_frozen: Color = Color(0.25, 1.0, 0.5, 1.0)
+@export var ground_offset: float = 0.02
+@export var dot_radius: float = 0.06
 
-var _mesh_instance: MeshInstance3D
-var _immediate_mesh: ImmediateMesh
+var _multi_mesh_instance: MultiMeshInstance3D
+var _multi_mesh: MultiMesh
+var _sphere_mesh: SphereMesh
+var _sphere_material: StandardMaterial3D
 var _current_color: Color = Color.YELLOW
 
 
 func _ready() -> void:
-	_immediate_mesh = ImmediateMesh.new()
-	_mesh_instance = MeshInstance3D.new()
-	_mesh_instance.mesh = _immediate_mesh
-	# Render above the default layer 0 so the arc is always visible.
-	_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_mesh_instance)
+	_sphere_material = StandardMaterial3D.new()
+	_sphere_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_sphere_material.albedo_color = _current_color
+	_sphere_material.no_depth_test = false
+
+	_sphere_mesh = SphereMesh.new()
+	_sphere_mesh.radius = dot_radius
+	_sphere_mesh.height = dot_radius * 2.0
+	_sphere_mesh.radial_segments = 8
+	_sphere_mesh.rings = 4
+	_sphere_mesh.material = _sphere_material
+
+	_multi_mesh = MultiMesh.new()
+	_multi_mesh.transform_format = MultiMesh.TRANSFORM_3D
+	_multi_mesh.mesh = _sphere_mesh
+	_multi_mesh.instance_count = 0
+
+	_multi_mesh_instance = MultiMeshInstance3D.new()
+	_multi_mesh_instance.multimesh = _multi_mesh
+	_multi_mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_multi_mesh_instance)
 
 
 ## Recompute and redraw the arc.
-## exclude: array of RIDs to skip (typically the active baton).
+## exclude: array of RIDs to skip (typically the active baton). Typed as
+## untyped Array so callers can pass a generic Array without conversion errors.
 ## collision_mask: which physics layers to check for impact.
-func update_arc(origin: Vector3, velocity: Vector3, exclude: Array[RID] = [], collision_mask: int = 0xFFFFFFFF) -> PackedVector3Array:
+func update_arc(origin: Vector3, velocity: Vector3, exclude: Array = [], collision_mask: int = 0xFFFFFFFF) -> PackedVector3Array:
 	var points: PackedVector3Array = _compute_points(origin, velocity, exclude, collision_mask)
 	_redraw(points)
 	return points
 
 
 func hide_arc() -> void:
-	_immediate_mesh.clear_surfaces()
+	_multi_mesh.instance_count = 0
 
 
 func set_aiming_color() -> void:
 	_current_color = color_aiming
+	_sphere_material.albedo_color = _current_color
 
 
 func set_frozen_color() -> void:
 	_current_color = color_frozen
+	_sphere_material.albedo_color = _current_color
 
 
-func _compute_points(origin: Vector3, velocity: Vector3, exclude: Array[RID], collision_mask: int) -> PackedVector3Array:
+func _compute_points(origin: Vector3, velocity: Vector3, exclude: Array, collision_mask: int) -> PackedVector3Array:
 	var pts: PackedVector3Array = PackedVector3Array()
 	pts.append(origin)
 	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
@@ -71,11 +92,9 @@ func _compute_points(origin: Vector3, velocity: Vector3, exclude: Array[RID], co
 
 
 func _redraw(points: PackedVector3Array) -> void:
-	_immediate_mesh.clear_surfaces()
 	if points.size() < 2:
+		_multi_mesh.instance_count = 0
 		return
-	_immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
-	_immediate_mesh.surface_set_color(_current_color)
-	for p in points:
-		_immediate_mesh.surface_add_vertex(p)
-	_immediate_mesh.surface_end()
+	_multi_mesh.instance_count = points.size()
+	for i in range(points.size()):
+		_multi_mesh.set_instance_transform(i, Transform3D(Basis.IDENTITY, points[i]))
