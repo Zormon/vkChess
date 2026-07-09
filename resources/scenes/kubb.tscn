@@ -1,16 +1,16 @@
 [gd_scene format=3 uid="uid://dgdsjrkcm0ycq"]
 
-[ext_resource type="Script" uid="uid://bdlut2cwmma0c" path="res://scenes/objects/kubb/kubb_default.gd" id="1_fgcq3"]
+[ext_resource type="Script" uid="uid://bdlut2cwmma0c" path="res://scenes/objects/kubb/kubb_default.gd" id="1_6bn11"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_1"]
-size = Vector3(0.07, 0.15, 0.07)
+size = Vector3(0.07, 0.2, 0.07)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood_light"]
 albedo_color = Color(0.6, 0.4, 0.22, 1)
 roughness = 0.85
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
-size = Vector3(0.07, 0.15, 0.07)
+size = Vector3(0.1, 0.21, 0.1)
 
 [node name="Kubb" type="RigidBody3D" unique_id=12657775]
 collision_layer = 4
@@ -19,7 +19,7 @@ mass = 0.5
 contact_monitor = true
 max_contacts_reported = 2
 angular_damp = 0.5
-script = ExtResource("1_fgcq3")
+script = ExtResource("1_6bn11")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=427636591]
 mesh = SubResource("BoxMesh_1")

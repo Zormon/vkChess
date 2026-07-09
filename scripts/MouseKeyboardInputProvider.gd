@@ -22,7 +22,6 @@ var _current_aim: Vector2 = Vector2.ZERO
 var _current_force: float = 0.0
 var _current_spin: float = 0.0
 var _was_freeze_held: bool = false
-var _throw_just_happened: bool = false
 # Cached mouse delta while charging (consumed each frame).
 var _pending_mouse_dy: float = 0.0
 var _pending_wheel_delta: float = 0.0
@@ -56,12 +55,6 @@ func is_freeze_held() -> bool:
 	return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 
 
-func just_thrown() -> bool:
-	var result: bool = _throw_just_happened
-	_throw_just_happened = false
-	return result
-
-
 func get_device_name() -> String:
 	return "Mouse + Keyboard"
 
@@ -76,7 +69,6 @@ func on_activated() -> void:
 
 func on_deactivated() -> void:
 	_was_freeze_held = false
-	_throw_just_happened = false
 
 
 # ----------------- Input handlers -----------------
@@ -133,7 +125,6 @@ func _update_freeze() -> void:
 	elif _was_freeze_held and not lmb_held:
 		# Edge: LMB just released -> fire throw.
 		throw_released.emit()
-		_throw_just_happened = true
 	_was_freeze_held = lmb_held
 
 

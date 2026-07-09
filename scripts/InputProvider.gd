@@ -35,12 +35,6 @@ func get_spin() -> float:
 func is_freeze_held() -> bool:
 	return false
 
-## True on the single frame the throw fires (after a freeze-and-release sequence).
-## Providers that work in continuous hold (gamepad RT) should track this themselves
-## by emitting throw_released and reading a small internal cooldown.
-func just_thrown() -> bool:
-	return false
-
 ## Called every frame so the provider can update its internal state
 ## (e.g. read mouse deltas, decay the spin accumulator, detect button edges).
 func update(_delta: float) -> void:

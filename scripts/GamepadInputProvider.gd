@@ -23,8 +23,6 @@ const AXIS_RT: int = 5
 
 # Internal state.
 var _current_force: float = 0.0
-var _was_freeze_held: bool = false
-var _throw_just_happened: bool = false
 var _current_aim: Vector2 = Vector2.ZERO
 var _current_spin: float = 0.0
 
@@ -45,18 +43,6 @@ func update(_delta: float) -> void:
 	_current_force = clampf((ry + 1.0) * 0.5, 0.0, 1.0)
 
 	_current_spin = _normalize_axis(_get_axis(AXIS_RX))
-
-	# Edge-detect freeze using the SAME source as is_freeze_held():
-	# analog axis 5 (RT) OR digital button 7 (ZR fallback). This keeps the
-	# edge events and the polled state consistent so the LaunchController
-	# doesn't see a freeze and a throw in the same frame.
-	var freeze_now: bool = is_freeze_held()
-	if freeze_now and not _was_freeze_held:
-		freeze_started.emit()
-	elif _was_freeze_held and not freeze_now:
-		throw_released.emit()
-		_throw_just_happened = true
-	_was_freeze_held = freeze_now
 
 	# Button presses for reset actions (via the InputMap actions).
 	if InputMap.has_action("reset_baton") and Input.is_action_just_pressed("reset_baton"):
@@ -88,12 +74,6 @@ func is_freeze_held() -> bool:
 	return false
 
 
-func just_thrown() -> bool:
-	var result: bool = _throw_just_happened
-	_throw_just_happened = false
-	return result
-
-
 func get_device_name() -> String:
 	var pads: Array = Input.get_connected_joypads()
 	if pads.is_empty():
@@ -114,8 +94,7 @@ func on_activated() -> void:
 
 
 func on_deactivated() -> void:
-	_was_freeze_held = false
-	_throw_just_happened = false
+	pass
 
 
 # ----------------- Helpers -----------------

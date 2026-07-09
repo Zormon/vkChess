@@ -13,13 +13,8 @@ signal input_provider_changed(provider_name: String)
 enum State {AIMING, FROZEN, THROWN}
 
 @export_group("Node References")
-@export var baton_scene: PackedScene
 @export var baton_spawn: Node3D
-# Use loose typing here so we don't depend on TrajectoryPreview class_name resolution.
-@export var trajectory: Node3D
-## UI controller that displays device name + power bar.
 @export var ui_controller: Node
-## Parent for the instantiated active baton (usually the scene root).
 @export var field_root: Node
 
 @export_group("Aim Tuning")
@@ -33,48 +28,34 @@ enum State {AIMING, FROZEN, THROWN}
 @export_range(0.0, 30.0, 0.5) var max_spin_rad: float = 10.0
 @export_range(0.0, 1.0, 0.2) var max_visual_roll: float = 2.0
 
-# Active input provider (gamepad or mouse+keyboard).
 var input_provider: Node = null
 
 var _state: int = State.AIMING
-# Internal aim parameters (live during AIMING, frozen during FROZEN).
-var _yaw: float = 0.0 # radians
-var _pitch: float = 0.0 # radians (elevation above horizon)
-var _roll: float = 0.0 # visual roll (radians) - not physical
-var _force: float = 0.0 # Newton*seconds magnitude of the throw impulse
-var _spin: Vector3 = Vector3.ZERO # angular velocity (rad/s)
-var _active_baton = null # Typed as Kastpinne in spirit; kept loose to avoid class_name resolution.
-var _frozen_params: Dictionary = {}
+var _yaw: float = 0.0
+var _pitch: float = 0.0
+var _roll: float = 0.0
+var _force: float = 0.0
+var _spin: Vector3 = Vector3.ZERO
+var _active_baton = null
+var _frozen_impulse: Vector3 = Vector3.ZERO
+var _frozen_spin: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
 	_auto_select_input_provider()
-	call_deferred("_deferred_spawn_baton")
-
-
-func _deferred_spawn_baton() -> void:
 	_pitch = deg_to_rad(35.0)
-	_spawn_baton()
-
+	# Deferred so the PhysicsServer3D has registered the new RigidBody3D
+	call_deferred("_spawn_baton")
 
 func _process(delta: float) -> void:
 	if input_provider != null:
 		input_provider.call("update", delta)
 
-	match _state:
-		State.AIMING:
-			_read_input_from_provider()
-			_update_baton_transform()
-			_update_trajectory()
-		State.FROZEN:
-			pass
-		State.THROWN:
-			pass
+	if _state == State.AIMING:
+		_read_input_from_provider()
+		_update_baton_transform()
 
-	# Provider drives the state transitions. "Hold to freeze, release to throw"
-	# is controlled entirely by the held state. The just_thrown() path was
-	# removed because it could fire on the same frame as _freeze_values() and
-	# skip the FROZEN state entirely.
+	# "Hold to freeze, release to throw" — driven entirely by the held state.
 	if input_provider != null:
 		var held: bool = bool(input_provider.call("is_freeze_held"))
 		if _state == State.AIMING and held:
@@ -83,13 +64,9 @@ func _process(delta: float) -> void:
 			_throw()
 
 
-
 # ----------------- Input provider management -----------------
 
 func _auto_select_input_provider() -> void:
-	# Mouse+keyboard provider temporarily disabled. Always use the gamepad.
-	# The MouseKeyboardInputProvider file/class stays in place so the abstraction
-	# is preserved; we just don't instantiate it.
 	_set_input_provider(GamepadInputProviderScript.new())
 
 
@@ -124,8 +101,7 @@ func _on_reset_kubbs_requested() -> void:
 			return
 
 
-# ----------------- Input reading -----------------
-
+# ----------------- Read input values and update local variables -----------------
 func _read_input_from_provider() -> void:
 	if input_provider == null:
 		return
@@ -133,22 +109,14 @@ func _read_input_from_provider() -> void:
 	var force01: float = float(input_provider.call("get_force"))
 	var spin: float = float(input_provider.call("get_spin"))
 
-	# Stick left -> aim left (yaw negative on the baton's world X axis).
-	# The baton always launches toward -Z (where the kubbs are), so positive
-	# aim.x should move the throw direction to the player's left, which is -X.
-	# Therefore: yaw = aim.x * max_yaw (not -aim.x).
+	# Positive aim.x -> throw to the player's left (-X), since the baton
+	# launches toward -Z where the kubbs are.
 	_yaw = aim.x * deg_to_rad(max_yaw_degrees)
 	_pitch = deg_to_rad(_pitch_from_input(aim.y))
 	_force = lerp(min_force, max_force, clampf(force01, 0.0, 1.0))
-	_spin_input_to_spin(spin)
+	_roll = spin * max_visual_roll
+	_spin = Vector3(0.0, 0.0, -spin * max_spin_rad)
 
-
-func _spin_input_to_spin(spin_input: float) -> void:
-	_roll = spin_input * max_visual_roll
-	_spin = Vector3(0.0, 0.0, -spin_input * max_spin_rad)
-
-
-# ----------------- Baton control -----------------
 
 func _update_baton_transform() -> void:
 	if _active_baton == null:
@@ -160,10 +128,9 @@ func _spawn_baton() -> void:
 	if _active_baton != null and is_instance_valid(_active_baton):
 		_active_baton.queue_free()
 		_active_baton = null
-	var baton = baton_scene.instantiate()
+	var baton = Globals.KastpinneScene.instantiate()
 	field_root.add_child(baton)
-	# Force the baton to a known-safe frozen state BEFORE setting _active_baton
-	# so that any subsequent reset_to() has a frozen, sleeping body to teleport.
+	# Freeze before assigning so reset_to() has a sleeping body to teleport.
 	baton.freeze = true
 	baton.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	baton.linear_velocity = Vector3.ZERO
@@ -190,11 +157,8 @@ func _on_baton_stopped() -> void:
 func _freeze_values() -> void:
 	if _active_baton == null:
 		return
-	_frozen_params = {
-		"impulse": _compute_initial_impulse(),
-		"spin": _spin,
-	}
-	trajectory.set_frozen_color()
+	_frozen_impulse = _compute_initial_impulse()
+	_frozen_spin = _spin
 	_state = State.FROZEN
 	state_changed.emit(_state)
 	_update_ui_state_label()
@@ -208,25 +172,7 @@ func _throw() -> void:
 	_state = State.THROWN
 	state_changed.emit(_state)
 	_update_ui_state_label()
-	_active_baton.call("throw",
-		_frozen_params.get("impulse", Vector3.ZERO),
-		_frozen_params.get("spin", Vector3.ZERO)
-	)
-	trajectory.hide_arc()
-
-
-# ----------------- Trajectory preview -----------------
-
-func _update_trajectory() -> void:
-	if _active_baton == null:
-		return
-	trajectory.set_aiming_color()
-	# Use untyped Array — Array[RID] strict typing causes errors when the
-	# active baton RID is invalid at boot time.
-	var exclude: Array = []
-	if _active_baton.get_rid().is_valid():
-		exclude.append(_active_baton.get_rid())
-
+	_active_baton.call("throw", _frozen_impulse, _frozen_spin)
 
 # ----------------- UI helper -----------------
 
