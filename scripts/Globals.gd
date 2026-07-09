@@ -3,7 +3,7 @@
 extends Node
 
 ## The single scene used for every Kubb in the game.
-const KubbScene: PackedScene = preload("res://resources/scenes/kubb.tscn")
+const KubbScene: PackedScene = preload("res://resources/objects/kubb.tscn")
 
 ## The single scene used for every Kastpinne (baton) in the game.
-const KastpinneScene: PackedScene = preload("res://resources/scenes/baton.tscn")
+const KastpinneScene: PackedScene = preload("res://resources/objects/baton.tscn")

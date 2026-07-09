@@ -41,6 +41,15 @@ var _frozen_impulse: Vector3 = Vector3.ZERO
 var _frozen_spin: Vector3 = Vector3.ZERO
 
 
+# Typed snapshot of the controller's aim/force state.
+class AimSnapshot extends RefCounted:
+	var yaw: float = 0.0
+	var pitch: float = 0.0
+	var roll: float = 0.0
+	var force: float = 0.0
+	var spin: Vector3 = Vector3.ZERO
+
+
 func _ready() -> void:
 	_auto_select_input_provider()
 	_pitch = deg_to_rad(35.0)
@@ -52,10 +61,9 @@ func _process(delta: float) -> void:
 		input_provider.call("update", delta)
 
 	if _state == State.AIMING:
-		_read_input_from_provider()
-		_update_baton_transform()
+		_update_baton_transform(_read_input_from_provider())
 
-	# "Hold to freeze, release to throw" — driven entirely by the held state.
+	# "Hold to freeze, release to throw"
 	if input_provider != null:
 		var held: bool = bool(input_provider.call("is_freeze_held"))
 		if _state == State.AIMING and held:
@@ -101,24 +109,33 @@ func _on_reset_kubbs_requested() -> void:
 			return
 
 
-# ----------------- Read input values and update local variables -----------------
-func _read_input_from_provider() -> void:
-	if input_provider == null:
-		return
+# ----------------- Read input values (returns a snapshot) -----------------
+func _read_input_from_provider() -> AimSnapshot:
 	var aim: Vector2 = input_provider.call("get_aim")
 	var force01: float = float(input_provider.call("get_force"))
 	var spin: float = float(input_provider.call("get_spin"))
 
 	# Positive aim.x -> throw to the player's left (-X), since the baton
 	# launches toward -Z where the kubbs are.
-	_yaw = aim.x * deg_to_rad(max_yaw_degrees)
-	_pitch = deg_to_rad(_pitch_from_input(aim.y))
-	_force = lerp(min_force, max_force, clampf(force01, 0.0, 1.0))
-	_roll = spin * max_visual_roll
-	_spin = Vector3(0.0, 0.0, -spin * max_spin_rad)
+	var snap := AimSnapshot.new()
+	snap.yaw = aim.x * deg_to_rad(max_yaw_degrees)
+	snap.pitch = deg_to_rad(_pitch_from_input(aim.y))
+	snap.force = lerp(min_force, max_force, clampf(force01, 0.0, 1.0))
+	snap.roll = spin * max_visual_roll
+	snap.spin = Vector3(0.0, 0.0, -spin * max_spin_rad)
+	return snap
 
 
-func _update_baton_transform() -> void:
+# ----------------- Apply a snapshot to local state and the baton -----------------
+# Pass null (the default) to re-apply the current local state without
+# reading input — used by _spawn_baton() before the first read.
+func _update_baton_transform(snapshot: AimSnapshot = null) -> void:
+	if snapshot != null:
+		_yaw = snapshot.yaw
+		_pitch = snapshot.pitch
+		_roll = snapshot.roll
+		_force = snapshot.force
+		_spin = snapshot.spin
 	if _active_baton == null:
 		return
 	_active_baton.reset_to(_compute_baton_transform())
