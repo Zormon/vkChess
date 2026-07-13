@@ -14,15 +14,17 @@ You are an expert Godot Engine developer specializing in GDScript. You write cle
 - **Language:** GDScript.
 - **Architecture:** Keep game logic encapsulated in relevant nodes. Use `@export` for all tweakable physics variables.
 - **Physics:** Utilize `RigidBody3D`. Use `apply_impulse` for the initial throw and `angular_velocity` to simulate the wood's spin.
-- **Input:** Design for Mouse and Controller (Joystick). Ensure raw input values are normalized before being applied to forces.
+- **Input:** Design for modularity. Ensure raw input values are normalized before being applied to forces.
 
 ## Current Goal (Prototypes)
 - [ ] Implement the `Baton.gd` script with exported properties for mass, gravity scale, and drag.
 - [ ] Develop the `LaunchController.gd` that maps input to a 3D `Vector3` force.
 - [ ] Setup collision layers and masks to ensure efficient interaction detection.
 
-## Interaction Guidelines for OpenCode
+## Code rules
 - Always suggest improvements that leverage Godot-specific features (e.g., `PhysicsMaterial`, `RayCast3D` for aiming).
 - Use typed GDScript (e.g., `func throw(force: Vector3) -> void:`).
 - Keep node paths clean; avoid hardcoding paths when a simple `@export var target_node: Node3D` can be used.
-- When generating scripts, add comments explaining the physical parameters.
+- Use comments only when necessary. Avoid overcommenting all functions and code.
+- Keep the code as simple as possible. Dont implement functions ahead of the task.
+- Dont implement functions that are called only once if the function is very short. Keep the code small.

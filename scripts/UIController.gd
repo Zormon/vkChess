@@ -3,8 +3,6 @@
 class_name UIController
 extends CanvasLayer
 
-@export var input_provider: Node = null
-
 var _device_label: Label
 var _power_bar: ProgressBar
 var _spin_bar: ProgressBar
@@ -15,30 +13,30 @@ var _aim_label: Label
 
 func _ready() -> void:
 	_build_ui()
+	InputBus.provider_name_changed.connect(_on_provider_name_changed)
+	# provider_name_changed only fires on swaps, not on the initial state,
+	# so seed the label with whatever the bus is currently using.
+	if _device_label != null:
+		_device_label.text = "Input: %s" % InputBus.get_device_name()
 
 
-func set_input_provider(provider: Node) -> void:
-	input_provider = provider
+func _on_provider_name_changed(device_name: String) -> void:
+	if _device_label != null:
+		_device_label.text = "Input: %s" % device_name
 
 
 func _process(_delta: float) -> void:
-	if input_provider == null:
-		return
-	if _device_label != null:
-		var device_name: String = input_provider.call("get_device_name")
-		_device_label.text = "Input: %s" % device_name
-
 	# Force bar: 0 to 1, brighter when freeze is held.
 	if _power_bar != null:
-		var force: float = float(input_provider.call("get_force"))
+		var force: float = InputBus.get_force()
 		_power_bar.value = force * 100.0
-		var held: bool = bool(input_provider.call("is_freeze_held"))
+		var held: bool = InputBus.is_freeze_held()
 		_power_bar.modulate.a = 0.4 if not held else 1.0
 
 	# Spin bar: -1 (left) to +1 (right), centered at 0.
 	# Color: green-ish for +, red-ish for -, white for 0.
 	if _spin_bar != null:
-		var spin: float = float(input_provider.call("get_spin"))
+		var spin: float = InputBus.get_spin()
 		_spin_bar.value = spin
 		if spin > 0.05:
 			_spin_bar.modulate = Color(0.55, 1.0, 0.55)
@@ -49,10 +47,10 @@ func _process(_delta: float) -> void:
 
 	# Debug overlay with live values.
 	if _aim_label != null:
-		var aim: Vector2 = input_provider.call("get_aim")
-		var spin_val: float = float(input_provider.call("get_spin"))
-		var force_val: float = float(input_provider.call("get_force"))
-		var held: bool = bool(input_provider.call("is_freeze_held"))
+		var aim: Vector2 = InputBus.get_aim()
+		var spin_val: float = InputBus.get_spin()
+		var force_val: float = InputBus.get_force()
+		var held: bool = InputBus.is_freeze_held()
 		var tag: String = "ZR" if held else "  "
 		_aim_label.text = "aim(%+.2f,%+.2f)  spin(%+.2f)  force(%.2f)  [%s]" % [aim.x, aim.y, spin_val, force_val, tag]
 
