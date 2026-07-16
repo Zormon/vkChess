@@ -16,9 +16,8 @@ signal stopped_moving()
 @export_range(0.0, 3.0, 0.05) var gravity_scale_value: float = 1.0
 @export_range(0.0, 2.0, 0.05) var linear_damping: float = 0.1
 @export_range(0.0, 2.0, 0.05) var angular_damping: float = 0.1
-## Wood-like bounce: low friction, moderate bounce.
-@export var physics_material_friction: float = 0.4
-@export var physics_material_bounce: float = 0.2
+@export_range(0.0, 1.0, 0.05) var physics_material_friction: float = 0.4
+@export_range(0.0, 1.0, 0.05) var physics_material_bounce: float = 0.2
 
 # --- Reset / stop detection ---
 @export_group("Reset Detection")

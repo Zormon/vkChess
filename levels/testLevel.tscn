@@ -120,8 +120,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8300846, 0, -3.9746842)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9200084, 0.113999486)
 script = ExtResource("3_1j8jt")
 kastpinneScene = ExtResource("2_c0vha")
-max_yaw_degrees = 30.0
-min_pitch_degrees = -5.0
+friction = 0.7
+linear_damping = 0.25
+angular_damping = 0.28
 
 [node name="Camera3D" type="Camera3D" parent="Thrower" unique_id=669018260]
 transform = Transform3D(1, 0, 0, 0, 0.9270213, 0.37500864, 0, -0.37500864, 0.9270213, 0, 0.4784726, 0.8317576)
