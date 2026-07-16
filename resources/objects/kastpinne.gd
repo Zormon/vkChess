@@ -26,7 +26,7 @@ signal stopped_moving()
 @export var stopped_time_threshold: float = 1.0
 
 var _stopped_timer: float = 0.0
-var _is_in_flight: bool = false
+var _flying: bool = false
 
 
 func _ready() -> void:
@@ -50,34 +50,23 @@ func _ready() -> void:
 
 
 ## Release the baton with a linear impulse and angular velocity.
-## force: linear impulse (Newton·seconds). With mass=0.3, 3.6 N·s ≈ 12 m/s.
-## spin: angular velocity in radians/sec on each axis.
-func throw(force: Vector3, spin: Vector3) -> void:
+func throw(force: Vector3, spin: float) -> void:
 	freeze = false
 	sleeping = false
 	apply_central_impulse(force)
-	angular_velocity = spin
-	_is_in_flight = true
+	angular_velocity = Vector3(0.0, 0.0, spin)
+	_flying = true
 	_stopped_timer = 0.0
 
 
 ## Reset to a given transform and freeze (kinematic, still collidable).
-## Strategy:
-## 1. Freeze the body first (so the physics server is OK with us writing transform).
-## 2. Set global_transform directly — when freeze=true, the physics server
-##    treats this as authoritative and the next physics step uses our value
-##    (instead of writing over it as happens with live bodies).
-## 3. Clear velocities and sleep.
-## This works for both the first-spawn case (RID may not be valid yet) and
-## subsequent resets, because it does not rely on the physics server's RID.
 func reset_to(transform_xform: Transform3D) -> void:
-	_is_in_flight = false
+	_flying = false
 	_stopped_timer = 0.0
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
-	# Direct transform write — safe because the body is frozen.
 	global_transform = transform_xform
 	# Also push to the physics server if the RID is already valid, so the
 	# frozen body's colliders move with it.
@@ -88,14 +77,14 @@ func reset_to(transform_xform: Transform3D) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not _is_in_flight:
+	if not _flying:
 		return
 	# Detect "stopped" condition for auto-reset.
 	if (linear_velocity.length() < contact_threshold_speed
 			and angular_velocity.length() < contact_threshold_speed):
 		_stopped_timer += delta
 		if _stopped_timer >= stopped_time_threshold:
-			_is_in_flight = false
+			_flying = false
 			_stopped_timer = 0.0
 			stopped_moving.emit()
 	else:

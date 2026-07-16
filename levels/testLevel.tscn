@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://bk7ap4w16jkt6"]
 
-[ext_resource type="Script" uid="uid://d4nlq3cu2v0yw" path="res://scripts/GameWorld.gd" id="1_c0vha"]
-[ext_resource type="Script" uid="uid://bslabsyqaba6u" path="res://scripts/TrajectoryPreview.gd" id="2_qifq4"]
+[ext_resource type="PackedScene" uid="uid://buk6hhcwvuhvr" path="res://resources/objects/kastpinne.tscn" id="2_c0vha"]
 [ext_resource type="Script" uid="uid://bvyi61s2fc3ex" path="res://scripts/Thrower.gd" id="3_1j8jt"]
+[ext_resource type="Script" uid="uid://tfmuqfxhycu8" path="res://scripts/Game_UIdev.gd" id="3_c0vha"]
 [ext_resource type="Script" uid="uid://ch6ukvbxlq33b" path="res://scripts/GameManager.gd" id="4_70rd4"]
-[ext_resource type="Script" uid="uid://cq6lg2ibr7c5l" path="res://scripts/UIController.gd" id="5_g68fs"]
+[ext_resource type="Script" uid="uid://ppqf8q5w0g6b" path="res://scripts/Game_UI.gd" id="4_gdkoi"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_horizon_color = Color(0.7, 0.75, 0.85, 1)
@@ -47,17 +47,31 @@ radial_segments = 24
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_1"]
 
 [node name="GameWorld" type="Node3D" unique_id=793210929]
-script = ExtResource("1_c0vha")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=16933427]
+[node name="Env" type="Node" parent="." unique_id=2065673224]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Env" unique_id=16933427]
 environment = SubResource("Environment_1")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2030918578]
-transform = Transform3D(0.86601907, -0.3535631, 0.3535593, 0, 0.70710295, 0.7071106, -0.500011, -0.61237127, 0.61236465, 0, 6, 2)
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Env" unique_id=2030918578]
+transform = Transform3D(0.86601907, -0.3535631, 0.35355926, 0, 0.70710295, 0.70711064, -0.500011, -0.61237127, 0.6123646, 0, 6, 2)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 1.1
 shadow_enabled = true
 directional_shadow_mode = 1
+
+[node name="GameManager" type="Node" parent="." unique_id=1402048605 node_paths=PackedStringArray("kubb_spawn1")]
+script = ExtResource("4_70rd4")
+kubb_spawn1 = NodePath("../Field/KubbSpawn1")
+spawn_length = 4.5
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1001001 node_paths=PackedStringArray("thrower")]
+script = ExtResource("4_gdkoi")
+thrower = NodePath("../Thrower")
+
+[node name="UIdev" type="CanvasLayer" parent="." unique_id=1619032009 node_paths=PackedStringArray("thrower")]
+script = ExtResource("3_c0vha")
+thrower = NodePath("../Thrower")
 
 [node name="Field" type="Node3D" parent="." unique_id=1643352486]
 
@@ -73,7 +87,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
 shape = SubResource("BoxShape3D_ground")
 
 [node name="FieldMarkers" type="Node3D" parent="Field" unique_id=640305617]
-visible = false
 
 [node name="CornerNW" type="MeshInstance3D" parent="Field/FieldMarkers" unique_id=242201023]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, 4)
@@ -101,25 +114,16 @@ mesh = SubResource("CylinderMesh_ground_marker")
 surface_material_override/0 = SubResource("StandardMaterial3D_marker")
 
 [node name="KubbSpawn1" type="Node3D" parent="Field" unique_id=107516779]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.8711925, 0, -3.9746842)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8300846, 0, -3.9746842)
 
 [node name="Thrower" type="Node3D" parent="." unique_id=1564645843]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9200084, 0.113999486)
 script = ExtResource("3_1j8jt")
+kastpinneScene = ExtResource("2_c0vha")
+max_yaw_degrees = 30.0
+min_pitch_degrees = -5.0
 
 [node name="Camera3D" type="Camera3D" parent="Thrower" unique_id=669018260]
-transform = Transform3D(1, 0, 0, 0, 0.927, 0.375, 0, -0.375, 0.927, 0, 2.3, 1.6)
+transform = Transform3D(1, 0, 0, 0, 0.9270213, 0.37500864, 0, -0.37500864, 0.9270213, 0, 0.4784726, 0.8317576)
 attributes = SubResource("CameraAttributesPractical_1")
 fov = 45.0
-
-[node name="BatonSpawnPoint" type="Node3D" parent="Thrower" unique_id=1735509190]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0.4)
-
-[node name="TrajectoryPreview" type="Node3D" parent="." unique_id=542243276]
-script = ExtResource("2_qifq4")
-
-[node name="GameManager" type="Node" parent="." unique_id=1402048605 node_paths=PackedStringArray("kubb_spawn1")]
-script = ExtResource("4_70rd4")
-kubb_spawn1 = NodePath("../Field/KubbSpawn1")
-
-[node name="UI" type="CanvasLayer" parent="." unique_id=1001001]
-script = ExtResource("5_g68fs")

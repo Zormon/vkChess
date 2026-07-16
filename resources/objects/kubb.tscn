@@ -1,7 +1,5 @@
 [gd_scene format=3 uid="uid://dgdsjrkcm0ycq"]
 
-[ext_resource type="Script" uid="uid://bdlut2cwmma0c" path="res://resources/objects/kubb_default.gd" id="1_6bn11"]
-
 [sub_resource type="BoxMesh" id="BoxMesh_1"]
 size = Vector3(0.07, 0.2, 0.07)
 
@@ -19,7 +17,6 @@ mass = 0.5
 contact_monitor = true
 max_contacts_reported = 2
 angular_damp = 0.5
-script = ExtResource("1_6bn11")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=427636591]
 mesh = SubResource("BoxMesh_1")

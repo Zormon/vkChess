@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://buk6hhcwvuhvr"]
 
-[ext_resource type="Script" uid="uid://d2v5i4ivvvuyv" path="res://scripts/Kastpinne.gd" id="1_kastpinne"]
+[ext_resource type="Script" uid="uid://d2v5i4ivvvuyv" path="res://resources/objects/kastpinne.gd" id="1_bd2k0"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_1"]
 top_radius = 0.02
@@ -8,8 +8,15 @@ bottom_radius = 0.02
 height = 0.3
 radial_segments = 12
 
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_qifq4"]
+frequency = 0.0327
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_c0vha"]
+noise = SubResource("FastNoiseLite_qifq4")
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood_dark"]
 albedo_color = Color(0.4, 0.25, 0.1, 1)
+albedo_texture = SubResource("NoiseTexture2D_c0vha")
 roughness = 0.85
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_cb3go"]
@@ -25,7 +32,7 @@ contact_monitor = true
 max_contacts_reported = 4
 linear_damp = 0.1
 angular_damp = 0.1
-script = ExtResource("1_kastpinne")
+script = ExtResource("1_bd2k0")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1379248292]
 mesh = SubResource("CylinderMesh_1")

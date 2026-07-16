@@ -1,6 +1,4 @@
-# GameManager.gd — Spawns and resets the kubb formation on the field.
-# The kubb layout is the GameManager's responsibility; the LaunchController
-# just routes the "reset kubbs" user action to the public reset_kubbs() API.
+# GameManager.gd — Spawns kubbs, managers turns, etc.
 class_name GameManager
 extends Node
 
@@ -13,22 +11,15 @@ extends Node
 var _kubbs1: Array = []
 var _kubbs2: Array = []
 
-
 func _ready() -> void:
-	InputBus.reset_kubbs_requested.connect(reset_kubbs)
 	_spawn_kubbs()
 
+func _process(_delta: float) -> void:
+	# Inputs
+	if Input.is_action_just_pressed('dev_reset_baton'):
+		_spawn_kubbs()
 
-## Public entry point: clears any fallen kubbs and rebuilds the formation.
-## Called by the LaunchController when the user requests a kubb reset
-## (gamepad Y / keyboard T). Safe to call any number of times.
-func reset_kubbs() -> void:
-	_spawn_kubbs()
-
-
-# Spawns the kubbs in their starting positions on the field. Clears any
-# existing kubbs first, then fills each non-null spawn point with a row
-# of `kubb_count` kubbs distributed along its local +X axis.
+# Spawns the kubbs in their starting positions on the field. Clears any existing kubbs first
 func _spawn_kubbs() -> void:
 	_clear_kubbs()
 	if kubb_spawn1 != null:
@@ -37,8 +28,7 @@ func _spawn_kubbs() -> void:
 		_kubbs2 = _spawn_row(kubb_spawn2)
 
 
-# Spawns one row of `kubb_count` kubbs as children of `parent`, raised
-# 0.25m so the rigid bodies settle cleanly on the ground.
+# Spawns one row of `kubb_count` kubbs as children of `parent`
 func _spawn_row(parent: Node3D) -> Array:
 	var row: Array = []
 	for i in kubb_count:
@@ -48,7 +38,7 @@ func _spawn_row(parent: Node3D) -> Array:
 		row.append(kubb)
 	return row
 
-
+# Clears all kubbs on the world
 func _clear_kubbs() -> void:
 	for k in _kubbs1:
 		if is_instance_valid(k):

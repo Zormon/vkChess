@@ -1,9 +1,11 @@
 # Thrower.gd - Orchestrates baton throw state machine and physics.
 # State flow: AIMING --(freeze)--> FROZEN --(throw)--> THROWN --(stopped)--> AIMING
+# @tool
 class_name Thrower
 extends Node3D
 
-signal state_changed(new_state: int)
+signal state_changed(state: State)
+signal aim_changed(aimData: AimSnapshot)
 
 enum State {AIMING, FROZEN, THROWN, INVALID}
 
@@ -13,37 +15,39 @@ class AimSnapshot extends RefCounted:
 	var pitch: float = 0.0
 	var roll: float = 0.0
 	var force: float = 0.0
-	var spin: Vector3 = Vector3.ZERO
+	var spin: float = 0.0
 
-@export_group("Node References")
-@export var baton_spawn: Node3D
-@export var ui_controller: Node
+@export var kastpinneScene: PackedScene:
+	set(value):
+		kastpinneScene = value
+		update_configuration_warnings()
 
 @export_group("Aim Tuning")
 @export_range(0.0, 60.0, 1.0) var max_yaw_degrees: float = 25.0
-@export_range(0.0, 45.0, 1.0) var min_pitch_degrees: float = 5.0
+@export_range(-25.0, 45.0, 1.0) var min_pitch_degrees: float = 5.0
 @export_range(30.0, 89.0, 1.0) var max_pitch_degrees: float = 55.0
 
-@export_group("Force / Spin")
+@export_group("Spin")
 @export_range(0.1, 20.0, 0.1) var min_force: float = 0.6
 @export_range(0.5, 30.0, 0.1) var max_force: float = 3.0
-@export_range(0.0, 30.0, 0.5) var max_spin_rad: float = 10.0
-@export_range(0.0, 1.0, 0.2) var max_visual_roll: float = 2.0
+@export_range(0.0, 30.0, 0.5) var max_spin: float = 10.0
 
 var _state: int = State.INVALID
 var _baton = null
+var _aim: AimSnapshot = AimSnapshot.new()
 
-var _yaw: float = 0.0
-var _pitch: float = deg_to_rad(35.0)
-var _roll: float = 0.0
-var _force: float = 0.0
-var _spin: Vector3 = Vector3.ZERO
-var _aim: AimSnapshot
+func _get_configuration_warnings() -> PackedStringArray:
+	var warnings = PackedStringArray()
+
+	# var script_raiz = kastpinneScene.get_state().get_node_script(0)
+	# if script_raiz == null or not (script_raiz.new() is Kastpinne):
+	# 	warnings.append("¡ERROR! La escena asignada en 'kastpinneScene' debe tener el script 'Kastpinne' en su nodo raíz.")
+	warnings.append("¡ERROR! La escena asignada en 'kastpinneScene' debe tener el script 'Kastpinne' en su nodo raíz.")
+
+	return warnings
 
 
 func _ready() -> void:
-	# Deferred so the PhysicsServer3D has registered the new RigidBody3D
-	# call_deferred("_spawn_baton")
 	_change_state(State.AIMING)
 
 func _process(_delta: float) -> void:
@@ -62,7 +66,7 @@ func _process(_delta: float) -> void:
 				_change_state(State.AIMING)
 
 	# --- Debug actions ---
-	if Input.is_action_just_pressed('debug_reset_baton') and _state == State.THROWN:
+	if Input.is_action_just_pressed('dev_reset_baton') and _state == State.THROWN:
 		_change_state(State.AIMING)
 
 #----------------- State Management -----------------
@@ -100,14 +104,14 @@ func _on_baton_stopped() -> void:
 # ----------------- Actions -----------------
 
 # Spawns or resets the baton to the launch position
-func _spawn_baton() -> void:
+func _spawn_baton(reset: bool = false) -> void:
 	# Remove current baton
-	if _baton != null and is_instance_valid(_baton):
+	if reset and is_instance_valid(_baton):
 		_baton.free()
 
-	var baton = Globals.KastpinneScene.instantiate()
-	# baton.freeze = true
-	# baton.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	var baton = kastpinneScene.instantiate() as Kastpinne
+	baton.freeze = true
+	baton.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	baton.linear_velocity = Vector3.ZERO
 	baton.angular_velocity = Vector3.ZERO
 
@@ -120,15 +124,7 @@ func _throw() -> void:
 		_change_state(State.AIMING)
 		return
 	
-	_baton.throw(_aim_direction_world() * _force, _spin)
-
-# ----------------- UI helper -----------------
-
-# TODO: Mover esto al ui gamemanager y suscribirse al evento onchanged state
-# func _update_ui_state_label(state: State) -> void:
-# 	if OS.has_feature("editor"):
-# 		ui_controller.call("set_state_label", State.keys()[state])
-
+	_baton.throw(_aim_direction_world() * _aim.force, _aim.spin)
 
 # ----------------- Computers -----------------
 
@@ -141,18 +137,20 @@ func _update_baton_transform_from_input() -> void:
 	# Points to the front
 	_aim.yaw = input_aim.x * deg_to_rad(max_yaw_degrees)
 	_aim.pitch = deg_to_rad(_pitch_from_input(input_aim.y))
-	_aim.force = lerp(min_force, max_force, clampf(input_force, 0.0, 1.0))
-	_aim.roll = input_spin * max_visual_roll
-	_aim.spin = Vector3(0.0, 0.0, -input_spin * max_spin_rad)
+	_aim.force = lerp(min_force, max_force, input_force * 0.5 + 0.5)
+	_aim.roll = input_spin * 2
+	_aim.spin = input_spin * max_spin
 
 	if _baton != null:
 		_baton.reset_to(_compute_baton_transform())
+
+	aim_changed.emit(_aim)
 
 # ----------------- Math helpers -----------------
 
 # Aim direction in world space
 func _aim_direction_world() -> Vector3:
-	return Vector3(sin(_yaw) * cos(_pitch), sin(_pitch), - cos(_yaw) * cos(_pitch)).normalized()
+	return Vector3(sin(_aim.yaw) * cos(_aim.pitch), sin(_aim.pitch), - cos(_aim.yaw) * cos(_aim.pitch)).normalized()
 
 func _compute_baton_transform() -> Transform3D:
 	var fwd: Vector3 = _aim_direction_world()
@@ -164,12 +162,12 @@ func _compute_baton_transform() -> Transform3D:
 	x_axis = x_axis.normalized()
 	var z_axis: Vector3 = x_axis.cross(y_axis).normalized()
 	y_axis = z_axis.cross(x_axis).normalized()
-	if abs(_roll) > 0.001:
-		var roll_b: Basis = Basis(y_axis, _roll)
+	if abs(_aim.roll) > 0.001:
+		var roll_b: Basis = Basis(y_axis, _aim.roll)
 		x_axis = roll_b * x_axis
 		z_axis = roll_b * z_axis
 	var basisn: Basis = Basis(x_axis, y_axis, z_axis)
-	return Transform3D(basisn, global_position)
+	return Transform3D(basisn, global_transform.origin)
 
 func _pitch_from_input(input_value: float) -> float:
 	var t: float = clampf((input_value + 1.0) * 0.5, 0.0, 1.0)
