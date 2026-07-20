@@ -1,10 +1,11 @@
 [gd_scene format=3 uid="uid://bk7ap4w16jkt6"]
 
-[ext_resource type="PackedScene" uid="uid://buk6hhcwvuhvr" path="res://resources/objects/kastpinne.tscn" id="2_c0vha"]
-[ext_resource type="Script" uid="uid://bvyi61s2fc3ex" path="res://scripts/Thrower.gd" id="3_1j8jt"]
-[ext_resource type="Script" uid="uid://tfmuqfxhycu8" path="res://scripts/Game_UIdev.gd" id="3_c0vha"]
-[ext_resource type="Script" uid="uid://ch6ukvbxlq33b" path="res://scripts/GameManager.gd" id="4_70rd4"]
-[ext_resource type="Script" uid="uid://ppqf8q5w0g6b" path="res://scripts/Game_UI.gd" id="4_gdkoi"]
+[ext_resource type="Script" uid="uid://ch6ukvbxlq33b" path="res://scripts/controllers/GameManager.gd" id="1_s4cx5"]
+[ext_resource type="PackedScene" uid="uid://dgdsjrkcm0ycq" path="res://scenes/objects/kubb.tscn" id="2_nyx1m"]
+[ext_resource type="Script" uid="uid://ppqf8q5w0g6b" path="res://scripts/ui/Game_UI.gd" id="2_x0cec"]
+[ext_resource type="Script" uid="uid://tfmuqfxhycu8" path="res://scripts/ui/Game_UIdev.gd" id="3_nyx1m"]
+[ext_resource type="Script" uid="uid://bvyi61s2fc3ex" path="res://scripts/controllers/Thrower.gd" id="4_ipuiq"]
+[ext_resource type="PackedScene" uid="uid://buk6hhcwvuhvr" path="res://scenes/objects/kastpinne.tscn" id="5_snsj5"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_horizon_color = Color(0.7, 0.75, 0.85, 1)
@@ -61,16 +62,17 @@ shadow_enabled = true
 directional_shadow_mode = 1
 
 [node name="GameManager" type="Node" parent="." unique_id=1402048605 node_paths=PackedStringArray("kubb_spawn1")]
-script = ExtResource("4_70rd4")
+script = ExtResource("1_s4cx5")
+kubbScene = ExtResource("2_nyx1m")
 kubb_spawn1 = NodePath("../Field/KubbSpawn1")
 spawn_length = 4.5
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=1001001 node_paths=PackedStringArray("thrower")]
-script = ExtResource("4_gdkoi")
+script = ExtResource("2_x0cec")
 thrower = NodePath("../Thrower")
 
 [node name="UIdev" type="CanvasLayer" parent="." unique_id=1619032009 node_paths=PackedStringArray("thrower")]
-script = ExtResource("3_c0vha")
+script = ExtResource("3_nyx1m")
 thrower = NodePath("../Thrower")
 
 [node name="Field" type="Node3D" parent="." unique_id=1643352486]
@@ -118,8 +120,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8300846, 0, -3.9746842)
 
 [node name="Thrower" type="Node3D" parent="." unique_id=1564645843]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9200084, 0.113999486)
-script = ExtResource("3_1j8jt")
-kastpinneScene = ExtResource("2_c0vha")
+script = ExtResource("4_ipuiq")
+kastpinneScene = ExtResource("5_snsj5")
 friction = 0.7
 linear_damping = 0.25
 angular_damping = 0.28

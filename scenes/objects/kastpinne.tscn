@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://buk6hhcwvuhvr"]
 
-[ext_resource type="Script" uid="uid://d2v5i4ivvvuyv" path="res://resources/objects/kastpinne.gd" id="1_bd2k0"]
+[ext_resource type="Script" uid="uid://d2v5i4ivvvuyv" path="res://scripts/objects/kastpinne.gd" id="1_bd2k0"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_1"]
 top_radius = 0.02

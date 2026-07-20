@@ -12,13 +12,13 @@ config_version=5
 
 config/name="vkKubb"
 config/description="3D Kubb throwing prototype — launch mechanics focus"
-run/main_scene="res://levels/testLevel.tscn"
+run/main_scene="res://scenes/levels/testLevel.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-Globals="*res://scripts/Globals.gd"
+Globals="*res://scripts/autoload/Globals.gd"
 
 [display]
 

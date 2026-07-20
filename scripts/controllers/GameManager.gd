@@ -2,6 +2,8 @@
 class_name GameManager
 extends Node
 
+@export var kubbScene: PackedScene
+
 @export_group("Field Layout")
 @export var kubb_spawn1: Node3D = null
 @export var kubb_spawn2: Node3D = null
@@ -32,7 +34,7 @@ func _spawn_kubbs() -> void:
 func _spawn_row(parent: Node3D) -> Array:
 	var row: Array = []
 	for i in kubb_count:
-		var kubb: RigidBody3D = Globals.KubbScene.instantiate()
+		var kubb: RigidBody3D = kubbScene.instantiate()
 		kubb.translate_object_local(Vector3(i * (spawn_length / kubb_count), 0.25, 0.0))
 		parent.add_child(kubb)
 		row.append(kubb)
